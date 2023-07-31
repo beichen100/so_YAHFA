@@ -196,7 +196,8 @@ void *genTrampoline(void *toMethod, void *entrypoint) {
 
     return targetAddr;
 }
-
+】
+// 根据架构不同，选定不同的trampoline地址
 void setupTrampoline(uint8_t offset) {
 #if defined(__i386__)
     trampoline[11] = offset;

@@ -14,6 +14,17 @@
 #define LIBNATIVELOADER "/apex/com.android.art/lib64/libnativeloader.so"
 #endif
 
+
+
+// 这段代码的主要作用是在Android ART虚拟机中加载so库。在Android ART虚拟机中，系统使用nativeloader来加载so库，而nativeloader本身也是一个so库。
+// 因此，如果我们想要在Android ART虚拟机中加载一个so库，我们需要先加载nativeloader，然后使用nativeloader来加载目标so库。
+
+
+
+
+
+
+
 static void init() __attribute__((constructor));
 
 typedef void * (*dlopenFunc)(const char *name, int flags, const void *caller_addr);
@@ -23,6 +34,12 @@ static dlopenFunc __loader_dlopen = NULL;
 static dlsymFunc __loader_dlsym = NULL;
 static ElfW(Addr) libnativeloader_base = 0;
 
+
+
+//callback函数会被dl_iterate_phdr函数调用多次，每次调用都会传递一个dl_phdr_info结构体，该结构体包含了当前遍历到的so库的信息，如名称、基地址、段信息等。
+// 在callback函数中，我们首先判断当前遍历到的so库是否是nativeloader，如果是，则保存nativeloader的基地址；
+// 然后判断当前遍历到的so库是否是linker，如果是，则在该so库的动态段中查找__loader_dlopen和__loader_dlsym函数的地址，并保存这些地址。
+// 最后，如果已经找到了nativeloader的基地址和__loader_dlopen/__loader_dlsym的地址，则返回1，停止遍历。如果还没有找到，则返回0，继续遍历。
 static int callback(struct dl_phdr_info *info, size_t size, void *data) {
     int p_type, j;
 
@@ -76,12 +93,18 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data) {
     }
 }
 
+
+//调用dl_iterate_phdr函数来遍历当前进程中加载的所有so库，并在遍历过程中获取nativeloader和linker的基地址以及__loader_dlopen和__loader_dlsym函数的指针。
 void init_dlopen() {
     dl_iterate_phdr(callback, NULL);
     LOGI("__loader_dlopen is at %p, __loader_dlsym is at %p, libnativeloader base is at %p",
          __loader_dlopen, __loader_dlsym, libnativeloader_base);
 }
 
+
+
+// 在art_dlopen函数中，我们调用__loader_dlopen函数来加载目标so库。这个函数的参数和dlopen函数的参数相同，包括要加载的so库的名称和加载标志。
+// 需要注意的是，我们需要传递nativeloader的基地址作为第三个参数，以便__loader_dlopen函数能够正确地调用nativeloader中的函数。
 void *art_dlopen(const char *name, int flags) {
     if(__loader_dlopen != NULL
        && __loader_dlsym != NULL
@@ -92,6 +115,10 @@ void *art_dlopen(const char *name, int flags) {
         return NULL;
     }
 }
+
+// 在art_dlsym函数中，我们调用__loader_dlsym函数来获取目标so库中的函数指针。
+// 这个函数的参数和dlsym函数的参数相同，包括要获取的函数的名称和已经加载的so库的句柄。
+// 需要注意的是，我们需要传递nativeloader的基地址作为第三个参数，以便__loader_dlsym函数能够正确地调用nativeloader中的函数。
 
 void *art_dlsym(void *handle, const char *name) {
     if(handle == NULL) {

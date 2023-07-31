@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "dlfcn.h": "c"
+    },
+    "cmake.sourceDirectory": "/Users/beichen/Downloads/so_YAHFA/library"
+}

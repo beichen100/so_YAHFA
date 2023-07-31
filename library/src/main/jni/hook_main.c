@@ -23,6 +23,7 @@ static jfieldID fieldArtMethod = NULL;
 //com.android.flinger.yafya
 //com_android_flinger_yafya
 
+// 字符串查找，返回str1中第一次出现str2的位置
 static char * __cdecl mystrstr(const char *str1, const char *str2)
 {
     char *cp = (char *)str1;
@@ -42,16 +43,16 @@ static char * __cdecl mystrstr(const char *str1, const char *str2)
     return NULL;
 }
 
-
-
+//根据SDK版本不同，设置ArtMethod结构里的字段的偏移量：OFFSET_ArtMehod_in_Object  OFFSET_access_flags_in_ArtMethod   OFFSET_entry_point_from_quick_compiled_code_in_ArtMethod
+//然后进入setupTrampoline（根据架构不同，选定不同的trampoline地址），init_dlopen（使用nativeloader加载so库）
 JNIEXPORT void JNICALL Java_com_android_flinger_yafya_YafyaMain_init(JNIEnv *env, jclass clazz, jint sdkVersion) {
     SDKVersion = sdkVersion;
     jclass classExecutable;
     LOGI("init to SDK %d", sdkVersion);
     switch (sdkVersion) {
-        case __ANDROID_API_T__:
-        case __ANDROID_API_S_L__:
-        case __ANDROID_API_S__:
+        case __ANDROID_API_T__: //33
+        case __ANDROID_API_S_L__: //32
+        case __ANDROID_API_S__:  //31
             kAccPreCompiled = 0x00800000;
         case __ANDROID_API_R__:
             classExecutable = (*env)->FindClass(env, "java/lang/reflect/Executable");
@@ -110,7 +111,7 @@ JNIEXPORT void JNICALL Java_com_android_flinger_yafya_YafyaMain_init(JNIEnv *env
     }
 
     setupTrampoline(OFFSET_entry_point_from_quick_compiled_code_in_ArtMethod);
-
+    
     init_dlopen();
 }
 
